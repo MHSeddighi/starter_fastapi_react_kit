@@ -1,0 +1,37 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # TODO: Add deployment steps for your target platform
+      # Examples:
+      #
+      # Render:
+      # - name: Deploy to Render
+      #   run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+      #
+      # Railway:
+      # - name: Deploy to Railway
+      #   run: npx railway up
+      #   env:
+      #     RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      #
+      # SSH Deploy:
+      # - name: Deploy via SSH
+      #   run: |
+      #     ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} '
+      #       cd /app &&
+      #       git pull &&
+      #       docker compose up -d --build
+      #     '
+
+      - name: Deployment placeholder
+        run: echo "Add deployment steps in .github/workflows/deploy.yml"

@@ -1,0 +1,102 @@
+# ─────────────────────────────────────────────────
+# Hackathon Starter Kit - Docker Compose
+# ─────────────────────────────────────────────────
+# Usage:
+#   docker compose up -d        # Start all services
+#   docker compose down         # Stop all services
+#   docker compose logs -f      # View logs
+
+version: "3.9"
+
+services:
+  # ─── Frontend ──────────────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.frontend
+    container_name: hackathon-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_URL=http://localhost:8000/api/v1
+    depends_on:
+      - backend
+    networks:
+      - hackathon-network
+    restart: unless-stopped
+
+  # ─── Backend ───────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.backend
+    container_name: hackathon-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - APP_DEBUG=true
+      - APP_SECRET_KEY=change-me-to-a-random-secret-key
+      - APP_CORS_ORIGINS=["http://localhost:5173","http://localhost:3000"]
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres:5432/hackathon
+      - DATABASE_SYNC_URL=postgresql://postgres:postgres@postgres:5432/hackathon
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=change-me-to-a-jwt-secret
+    volumes:
+      - uploads:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - hackathon-network
+    restart: unless-stopped
+
+  # ─── PostgreSQL ───────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: hackathon-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=hackathon
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - hackathon-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ─── Redis ────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: hackathon-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - hackathon-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+networks:
+  hackathon-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  uploads:
